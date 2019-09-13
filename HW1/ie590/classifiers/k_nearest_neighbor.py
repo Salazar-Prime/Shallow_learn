@@ -75,7 +75,7 @@ class KNearestNeighbor(object):
                 #####################################################################
                 #                             START OF YOUR CODE                    #
                 #####################################################################
-#                 pass # Write your code here
+                #pass # Write your code here
                 dists[i,j] = np.sqrt(np.sum(np.square(np.subtract(X[i,:],self.X_train[j,:]) ) ) )
                 
                 #####################################################################
@@ -134,7 +134,7 @@ class KNearestNeighbor(object):
         #########################################################################    
         #pass # Write your code here
         dists = np.sum(np.square(self.X_train),axis=1)+ np.sum(np.square(X),axis=1)[:,np.newaxis]
-        dists = dists -2*np.dot(X,np.transpose(sels.X_train))
+        dists = np.sqrt(dists -2*np.dot(X,np.transpose(self.X_train)))
         #########################################################################
         #                         END OF YOUR CODE                              #
         #########################################################################
@@ -161,7 +161,10 @@ class KNearestNeighbor(object):
         #########################################################################
         #                             START OF YOUR CODE                        #
         #########################################################################
-        pass # Write your code here
+        #pass # Write your code here        
+        for i in xrange(num_test):
+            for j in xrange(num_train):
+                dists[i,j] = np.sum(np.abs(np.subtract(X[i,:],self.X_train[j,:]) ) ) 
         #########################################################################
         #                         END OF YOUR CODE                              #
         #########################################################################
