@@ -41,8 +41,8 @@ def softmax_loss_naive(W, X, y, reg):
     num_train = X.shape[0]
     
     for i in range(num_train):
-        scores = X[i].dot(W)
-        scores -= np.max(scores) # prevetn overflow during exp()
+        scores = np.dot(X[i], W)
+        scores -= np.max(scores) # prevent overflow during exp()
         
         prob_sum = np.sum(np.exp(scores))
         current_prob = np.exp(scores[y[i]]) / prob_sum
@@ -88,8 +88,8 @@ def softmax_loss_partially_vectorized(W, X, y, reg):
     num_train = X.shape[0]
     
     for i in range(num_train):
-        scores = X[i].dot(W)
-        scores -= np.max(scores) # prevetn overflow during exp()
+        scores = np.dot(X[i], W)
+        scores -= np.max(scores) # prevent overflow during exp()
         
         prob_sum = np.sum(np.exp(scores))
         current_prob = np.exp(scores[y[i]]) / prob_sum
@@ -97,7 +97,7 @@ def softmax_loss_partially_vectorized(W, X, y, reg):
         
         prob_score =  np.exp(scores)/prob_sum 
         prob_score[y[i]] = current_prob -1 # correct class
-        dW[:,:] += X[i][:,np.newaxis]*prob_score
+        dW += X[i][:,np.newaxis]*prob_score
     
     # average    
     loss /= num_train
@@ -129,7 +129,26 @@ def softmax_loss_vectorized(W, X, y, reg):
     #############################################################################
     #                          START OF YOUR CODE                               #
     #############################################################################
-    pass ## Write your code here
+    #pass ## Write your code here
+    num_classes = W.shape[1]
+    num_train = X.shape[0]
+    row_index = list(range(num_train))
+
+    scores = np.dot(X,W)
+    scores = np.exp(scores - np.max(scores)) # prevent overflow during exp()
+    prob_sum = np.sum(scores, axis=1)
+    loss = -np.sum(np.log(scores[row_index,y]/prob_sum))
+    
+    prob_score =  scores / prob_sum[:,np.newaxis] 
+    prob_score[row_index,y] = (scores[row_index,y]/prob_sum - 1)
+    dW = np.dot(np.transpose(X),prob_score)
+    
+    # average    
+    loss /= num_train
+    dW /= num_train
+    # add regularization
+    loss += reg * np.sum(W*W)
+    dW += 2*W*reg
     #############################################################################
     #                          END OF YOUR CODE                                 #
     #############################################################################
