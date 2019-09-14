@@ -81,7 +81,10 @@ class TwoLayerNet(object):
         #############################################################################
         #                          START OF YOUR CODE                               #
         #############################################################################
-        pass ## Write your code here
+        #pass ## Write your code here
+        out_1 = np.dot(X,W1) + b1
+        X2 = self.sigmoid(out_1)
+        scores = np.dot(X2,W2) + b2
         ############################################################################
         #                              END OF YOUR CODE                             #
         #############################################################################
@@ -100,7 +103,15 @@ class TwoLayerNet(object):
         #############################################################################
         #                          START OF YOUR CODE                               #
         #############################################################################
-        pass ## Write your code here
+        #pass ## Write your code here
+        row_index = list(range(N))
+        
+        # can we call softmax? # Loss diff in range of e-12 not possible (not enough dp)
+        scores = np.exp(scores - np.max(scores)) # prevent overflow during exp()
+        prob_sum = np.sum(scores, axis=1)
+        loss = -np.sum(np.log(scores[row_index,y]/prob_sum))
+        loss /= N
+        loss += reg * (np.sum(W1*W1) + np.sum(W2*W2))
         #############################################################################
         #                              END OF YOUR CODE                             #
         #############################################################################
