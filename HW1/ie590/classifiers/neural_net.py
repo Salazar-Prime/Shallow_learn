@@ -82,8 +82,8 @@ class TwoLayerNet(object):
         #                          START OF YOUR CODE                               #
         #############################################################################
         #pass ## Write your code here
-        out_1 = np.dot(X,W1) + b1
-        X2 = self.sigmoid(out_1)
+        out1 = np.dot(X,W1) + b1
+        X2 = self.sigmoid(out1)
         scores = np.dot(X2,W2) + b2
         ############################################################################
         #                              END OF YOUR CODE                             #
@@ -125,7 +125,21 @@ class TwoLayerNet(object):
         #############################################################################
         #                          START OF YOUR CODE                               #
         #############################################################################
-        pass ## Write your code here
+        #pass ## Write your code here
+        dscores = scores / prob_sum[:,np.newaxis]
+        dscores[row_index,y] -= 1
+        dscores /= N
+        
+        db2 = np.sum(dscores, axis=0)        
+        dW2 = np.dot(X2.T, dscores)        
+        dW2 += 2*reg*W2                 # regularization gradient contribution
+        dX2 = np.dot(dscores, W2.T)
+      
+        dout1 = X2*(1 - X2)*dX2         # sigmoid
+        db1 = np.sum(dout1,axis=0)        
+        dW1 = np.dot(X.T,dout1)
+        dW1 += 2*reg*W1                 # regularization gradient contribution
+        grads = {'W1':dW1,'W2':dW2, 'b1':db1, 'b2':db2}
         #############################################################################
         #                              END OF YOUR CODE                             #
         #############################################################################
@@ -171,13 +185,17 @@ class TwoLayerNet(object):
             #########################################################################
             #                          START OF YOUR CODE                           #
             #########################################################################
-            pass ## Write your code here
+            #pass ## Write your code here
+            batch_ids = np.random.choice(np.arange(num_train), batch_size, replace = True)
+            X_batch = X[batch_ids]
+            y_batch = y[batch_ids] # linear_classifier.py
             #########################################################################
             #                             END OF YOUR CODE                          #
             #########################################################################
 
-            # Compute loss and gradients using the current minibatch
-
+            # Compute loss and gradients using the current minibatch               
+            loss, grad = self.loss(X_batch, y=y_batch, reg=reg)
+            loss_history.append(loss)
 
             #########################################################################
             # TODO: Use the gradients in the grads dictionary to update the         #
@@ -187,7 +205,9 @@ class TwoLayerNet(object):
             #########################################################################
             #                          START OF YOUR CODE                           #
             #########################################################################
-            pass ## Write your code here
+            #pass ## Write your code here
+            for key in self.params.keys():
+                self.params[key] -= learning_rate * grad[key] 
             #########################################################################
             #                             END OF YOUR CODE                          #
             #########################################################################
@@ -234,7 +254,8 @@ class TwoLayerNet(object):
         ###########################################################################
         #                          START OF YOUR CODE                             #
         ###########################################################################
-        pass ## Write your code here
+        #pass ## Write your code here
+        y_pred = np.argmax(self.loss(X), axis = 1) # linear_classifier.py
         ###########################################################################
         #                              END OF YOUR CODE                           #
         ###########################################################################
