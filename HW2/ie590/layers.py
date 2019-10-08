@@ -20,13 +20,13 @@ def affine_forward(x, w, b):
     - out: output, of shape (N, M)
     - cache: (x, w, b)
     """
-    out = None
     ###########################################################################
     # TODO: Implement the affine forward pass. Store the result in out. You   #
     # will need to reshape the input into rows.                               #
     ###########################################################################
-    # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    pass # Write your code here
+    # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****        
+    d_shape = x[0].shape
+    out = x.reshape(x.shape[0], np.prod(d_shape)).dot(w) + b        
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -57,7 +57,9 @@ def affine_backward(dout, cache):
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    pass # Write your code here
+    dx = np.dot(dout, w.T).reshape(x.shape)
+    dw = np.dot(x.reshape(x.shape[0], w.shape[0]).T, dout)
+    db = np.sum(dout, axis=0)
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -81,7 +83,8 @@ def leaky_relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     # Use 0.01 as leaky relu parameter
-    pass # Write your code here
+    alpha = 0.01
+    out = (x<0)*alpha*x + (x>=0)*x
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -105,7 +108,8 @@ def leaky_relu_backward(dout, cache):
     # TODO: Implement the Leaky ReLU backward pass.                           #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    pass # Write your code here
+    alpha = 0.01
+    dx = dout*(x>=0) + dout*alpha*(x<0)       
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #

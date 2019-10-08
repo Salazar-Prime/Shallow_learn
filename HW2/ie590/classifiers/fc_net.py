@@ -47,8 +47,11 @@ class TwoLayerNet(object):
         # and biases using the keys 'W1' and 'b1' and second layer                 #
         # weights and biases using the keys 'W2' and 'b2'.                         #
         ############################################################################
-        # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        pass # Write your code here
+        # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****        
+        self.params['W1'] = np.random.normal(0, weight_scale, [input_dim, hidden_dim])
+        self.params['b1'] = np.zeros(hidden_dim)
+        self.params['W2'] = np.random.normal(0, weight_scale, [hidden_dim, num_classes])
+        self.params['b2'] = np.zeros(num_classes)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -99,7 +102,7 @@ class TwoLayerNet(object):
         #                                                                          #
         # NOTE: To ensure that your implementation matches ours and you pass the   #
         # automated tests, make sure that your L2 regularization includes a factor #
-        # of 0.5 to simplify the expression for the gradient.                      #
+        # of 0.5 to simplify. ./ the expression for the gradient.                      #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         pass # Write your code here
