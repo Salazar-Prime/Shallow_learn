@@ -77,13 +77,20 @@ class TwoLayerNet(object):
         - grads: Dictionary with the same keys as self.params, mapping parameter
           names to gradients of the loss with respect to those parameters.
         """
+        W1 = self.params['W1']
+        b1 = self.params['b1']
+        W2 = self.params['W2']
+        b2 = self.params['b2']
         scores = None
         ############################################################################
         # TODO: Implement the forward pass for the two-layer net, computing the    #
         # class scores for X and storing them in the scores variable.              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        pass # Write your code here
+        
+        X2, cache1 = affine_leaky_relu_forward(X, W1, b1)
+        scores, cache2 = affine_forward(X2, W2, b2)
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -105,7 +112,18 @@ class TwoLayerNet(object):
         # of 0.5 to simplify. ./ the expression for the gradient.                      #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        pass # Write your code here
+
+        loss, dscores = softmax_loss(scores, y)
+        loss += 0.5 * (np.sum(W1**2) + np.sum(W2**2)) * self.reg 
+        
+        dX2, dW2, db2 = affine_backward(dscores, cache2)
+        dX, dW1, db1 = affine_leaky_relu_backward(dX2, cache1)
+        
+        grads['W1'] = dW1 + W1*self.reg
+        grads['b1'] = db1
+        grads['W2'] = dW2 + W2*self.reg
+        grads['b2'] = db2
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
