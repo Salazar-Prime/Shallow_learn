@@ -193,7 +193,18 @@ class FullyConnectedNet(object):
         # parameters should be initialized to zeros.                               #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        pass # Write your code here
+
+        dim_allLayers = np.hstack((input_dim, hidden_dims, num_classes))
+        
+        for i in range(self.num_layers):
+            self.params['W%d'%(i+1)] = np.random.normal(0, weight_scale, [dim_allLayers[i], dim_allLayers[i+1]])
+            self.params['b%d'%(i+1)] = np.zeros(dim_allLayers[i+1])
+            
+        if normalization != None:
+            for i in range(self.num_layers):
+                self.params['gamma%d'%(i+1)] = np.ones(dim_allLayers[i+1])
+                self.params['beta%d'%(i+1)] = np.zeros(dim_allLayers[i+1])
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -254,7 +265,15 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        pass # Write your code here
+
+        caches = []
+        scores = X
+        for i in range(self.num_layers - 1):
+            scores, cache = affine_leaky_relu_forward(scores, self.params['W%d'%(i+1)], self.params['b%d'%(i+1)])
+            caches.append(cache)
+        scores, cache = affine_forward(scores, self.params['W%d'%(i+2)], self.params['b%d'%(i+2)])    
+        caches.append(cache)
+
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -279,7 +298,20 @@ class FullyConnectedNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        pass # Write your code here
+        
+        # loss
+        loss, dscores = softmax_loss(scores, y)        
+        for i in range(self.num_layers):
+            loss += 0.5 * np.sum(self.params['W%d'%(i+1)]**2) * self.reg
+        
+        # gradients
+        dX, grads['W%d'%(i+1)], grads['b%d'%(i+1)] = affine_backward(dscores, caches.pop())
+        grads['W%d'%(i+1)] += self.params['W%d'%(i+1)] * self.reg
+        
+        for i in range(self.num_layers-2, -1, -1):
+            dX, grads['W%d'%(i+1)], grads['b%d'%(i+1)] = affine_leaky_relu_backward(dX, caches.pop())
+            grads['W%d'%(i+1)] += self.params['W%d'%(i+1)] * self.reg
+
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
