@@ -66,7 +66,10 @@ def sgd_momentum(w, dw, config=None):
     # the next_w variable. You should also use and update the velocity v.     #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    pass # Write your code here
+    
+    v = config['momentum'] * v - config['learning_rate'] * dw
+    next_w = w  + v
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -88,10 +91,10 @@ def rmsprop(w, dw, config=None):
     - cache: Moving average of second moments of gradients.
     """
     if config is None: config = {}
-    config.setdefault('learning_rate', 1e-2)
-    config.setdefault('decay_rate', 0.99)
-    config.setdefault('epsilon', 1e-8)
-    config.setdefault('cache', np.zeros_like(w))
+    lr = config.setdefault('learning_rate', 1e-2)
+    dr = config.setdefault('decay_rate', 0.99)
+    ep = config.setdefault('epsilon', 1e-8)
+    cc = config.setdefault('cache', np.zeros_like(w))
 
     next_w = None
     ###########################################################################
@@ -100,7 +103,11 @@ def rmsprop(w, dw, config=None):
     # config['cache'].                                                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    pass # Write your code here    
+
+    cc  = dr*cc + (1-dr)*dw*dw
+    next_w = w - lr * dw/ (np.sqrt(cc) + ep)
+    config['cache'] = cc
+                      
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -124,13 +131,13 @@ def adam(w, dw, config=None):
     - t: Iteration number.
     """
     if config is None: config = {}
-    config.setdefault('learning_rate', 1e-3)
-    config.setdefault('beta1', 0.9)
-    config.setdefault('beta2', 0.999)
-    config.setdefault('epsilon', 1e-8)
-    config.setdefault('m', np.zeros_like(w))
-    config.setdefault('v', np.zeros_like(w))
-    config.setdefault('t', 0)
+    lr = config.setdefault('learning_rate', 1e-3)
+    b1 = config.setdefault('beta1', 0.9)
+    b2 = config.setdefault('beta2', 0.999)
+    ep = config.setdefault('epsilon', 1e-8)
+    m = config.setdefault('m', np.zeros_like(w))
+    v = config.setdefault('v', np.zeros_like(w))
+    t = config.setdefault('t', 0)
 
     next_w = None
     ###########################################################################
@@ -142,7 +149,18 @@ def adam(w, dw, config=None):
     # using it in any calculations.                                           #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    pass # Write your code here
+    
+    t+=1
+    m = m * b1 + (1 - b1) * dw
+    v = v * b2 + (1 - b2) * dw * dw
+    iub = m / (1 - b1 ** t)
+    nub = v / (1 - b2 ** t)
+    next_w = w - lr * iub / (np.sqrt(nub) + ep)
+        
+    config['m'] = m
+    config['v'] = v
+    config['t'] = t
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
