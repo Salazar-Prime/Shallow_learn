@@ -593,9 +593,28 @@ def conv_forward_naive(x, w, b, conv_param):
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
-
+    
+    # unpacking values
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    
+    # padding and output
+    xp = np.pad(x, ((0,0),(0,0),(pad,pad),(pad,pad)), 'constant')
+    Hp = int(1 + (H + 2 * pad - HH) / stride)
+    Wp = int(1 + (W + 2 * pad - WW) / stride)
+    out = np.zeros((N, F, Hp, Wp))
+    
+    # convolution
+    for i in range(N):
+        for j in range(F):
+            for hi in range(Hp):
+                for wi in range(Wp):
+                    out[i,j,hi,wi] = b[j] + np.sum(xp[i,:,hi*stride:hi*stride+HH,wi*stride:wi*stride+WW] * w[j,:,:,:])
+                    
+    
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -623,8 +642,33 @@ def conv_backward_naive(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
-
+    # unpacking            
+    x, w, b, conv_param = cache
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    
+    # padding
+    xp = np.pad(x, ((0,0),(0,0),(pad,pad),(pad,pad)), 'constant')
+    Hp = int(1 + (H + 2 * pad - HH) / stride)
+    Wp = int(1 + (W + 2 * pad - WW) / stride)
+    db  = np.zeros_like( b)
+    dw  = np.zeros_like( w)
+    dxp = np.zeros_like(xp)
+    dx  = np.zeros_like( x)
+    
+    # gradient_convolution
+    for i in range(N):
+        for j in range(F):            
+            db[j] += np.sum(dout[i, j]) # gradient of bias
+            for hi in range(Hp):
+                for wi in range(Wp):
+                    dw[j] += xp[i,:,hi*stride:hi*stride+HH,wi*stride:wi*stride+WW] * dout[i,j,hi,wi] # gradient of w
+                    dxp[i,:,hi*stride:hi*stride+HH,wi*stride:wi*stride+WW] += w[j] * dout[i,j,hi,wi] # gradient of xp
+   
+    dx = dxp[:, :, pad:pad+H, pad:pad+W] # gradient of x
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -651,7 +695,22 @@ def avg_pool_forward_naive(x, pool_param):
     # TODO: Implement the average pooling forward pass                        #
     ###########################################################################
 
-    pass
+    # Extract shapes and constants
+    N, C, H, W = x.shape
+    HH = pool_param.get('pool_height', 2)
+    WW = pool_param.get('pool_width', 2)
+    stride = pool_param.get('stride', 2)
+    assert (H - HH) % stride == 0, 'Sanity Check Status: Max Pool Failed in Height'
+    assert (W - WW) % stride == 0, 'Sanity Check Status: Max Pool Failed in Width'
+    H_prime = 1 + (H - HH) // stride
+    W_prime = 1 + (W - WW) // stride
+    # Construct output
+    out = np.zeros((N, C, H_prime, W_prime))
+    # Naive Loops
+    for n in range(N):
+        for j in range(H_prime):
+            for i in range(W_prime):
+                out[n, :, j, i] = np.mean(x[n, :, j*stride:j*stride+HH, i*stride:i*stride+WW], axis=(-1, -2))
 
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -676,7 +735,21 @@ def avg_pool_backward_naive(dout, cache):
     # TODO: Implement the average pooling backward pass                       #
     ###########################################################################
 
-    pass
+    x, pool_param = cache
+    N, C, H, W = x.shape
+    HH = pool_param.get('pool_height', 2)
+    WW = pool_param.get('pool_width', 2)
+    stride = pool_param.get('stride', 2)
+    H_prime = 1 + (H - HH) // stride
+    W_prime = 1 + (W - WW) // stride
+    # Construct output
+    dx = np.zeros_like(x)
+    # Naive Loops
+    for n in range(N):
+        for c in range(C):
+            for j in range(H_prime):
+                for i in range(W_prime):
+                    dx[n, c, j*stride:j*stride+HH, i*stride:i*stride+WW] += dout[n, c, j, i] / (HH*WW)
 
     ###########################################################################
     #                             END OF YOUR CODE                            #
