@@ -55,8 +55,19 @@ class FourLayerConvNet(object):
         # the start of the loss() function to see how that happens.                #                           
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        C, H, W = input_dim
+        
+        self.params['W1'] = np.random.normal(0, weight_scale, [num_filters, C, filter_size, filter_size])
+        self.params['b1'] = np.zeros(num_filters)
+        
+        self.params['W2'] = np.random.normal(0, weight_scale, [num_filters*H*W//4, hidden_dim])
+        self.params['b2'] = np.zeros(hidden_dim)
+        
+        self.params['W3'] = np.random.normal(0, weight_scale, [hidden_dim, hidden_dim])
+        self.params['b3'] = np.zeros(hidden_dim)
+        
+        self.params['W4'] = np.random.normal(0, weight_scale, [hidden_dim, num_classes])
+        self.params['b4'] = np.zeros(num_classes)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -97,7 +108,10 @@ class FourLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        scores, cache1 = conv_relu_pool_forward(X, self.params['W1'], self.params['b1'], conv_param, pool_param)
+        scores, cache2 = affine_relu_forward(scores, self.params['W2'], self.params['b2'])
+        scores, cache3 = affine_relu_forward(scores, self.params['W3'], self.params['b3'])
+        scores, cache4 = affine_forward(scores, self.params['W4'], self.params['b4'])
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -120,8 +134,26 @@ class FourLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        reg = self.reg
+        loss, dscores = softmax_loss(scores, y)
+        loss += 0.5*np.sum(list(map(lambda x: np.sum(self.params['W%d'%x]**2), [1,2,3,4])))*self.reg 
 
+        # GRADIENT W4
+        dscores, grads['W4'], grads['b4'] = affine_backward(dscores, cache4)
+        grads['W4'] += self.params['W4']*reg
+        
+        # GRADIENT W3
+        dscores, grads['W3'], grads['b3'] = affine_relu_backward(dscores, cache3)
+        grads['W3'] += self.params['W3']*reg
+        
+        # GRADIENT W2
+        dscores, grads['W2'], grads['b2'] = affine_relu_backward(dscores, cache2)
+        grads['W2'] += self.params['W2']*reg
+        
+        # GRADIENT W1
+        dscores, grads['W1'], grads['b1'] = conv_relu_pool_backward(dscores, cache1)
+        grads['W1'] += self.params['W1']*reg
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #

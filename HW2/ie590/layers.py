@@ -869,9 +869,13 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # Your implementation should be very short; ours is less than five lines. #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
-
+    
+    bn_param['flag'] = None
+    N, C, H, W = x.shape
+    x = np.reshape(np.transpose(x, (0,2,3,1)), (N*H*W, C))
+    out, cache = batchnorm_forward(x, gamma, beta, bn_param)
+    out = np.transpose(np.reshape(out, (N, H, W, C)),(0,3,1,2))
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -904,7 +908,11 @@ def spatial_batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+#     bn_param['flag'] = None
+    N, C, H, W = dout.shape
+    x = np.reshape(np.transpose(dout, (0,2,3,1)), (N*H*W, C))
+    dx, dgamma, dbeta = batchnorm_backward_alt(x, cache)
+    dx = np.transpose(np.reshape(dx, (N, H, W, C)),(0,3,1,2))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
