@@ -178,7 +178,6 @@ class FullyConnectedNet(object):
         self.num_layers = 1 + len(hidden_dims)
         self.dtype = dtype
         self.params = {}
-
         ############################################################################
         # TODO: Initialize the parameters of the network, storing all values in    #
         # the self.params dictionary. Store weights and biases for the first layer #
@@ -271,10 +270,10 @@ class FullyConnectedNet(object):
         for i in range(self.num_layers - 1):
             if self.normalization=='batchnorm':
                 scores, cache = affine_bn_leaky_relu_forward(scores, self.params['W%d' % (i + 1)], self.params['b%d' % (i + 1)],
-                                                      self.params['gamma%d' % (i + 1)], self.params['beta%d' % (i + 1)], self.bn_params[i])
+                                                      self.params['gamma%d' % (i + 1)], self.params['beta%d' % (i + 1)], self.bn_params[i], self.dropout_param, self.use_dropout)
             elif self.normalization=='layernorm':
                 scores, cache = affine_ln_leaky_relu_forward(scores, self.params['W%d' % (i + 1)], self.params['b%d' % (i + 1)],
-                                                      self.params['gamma%d' % (i + 1)], self.params['beta%d' % (i + 1)], self.bn_params[i])
+                                                      self.params['gamma%d' % (i + 1)], self.params['beta%d' % (i + 1)], self.bn_params[i], self.dropout_param, self.use_dropout)
             else:
                 scores, cache = affine_leaky_relu_forward(scores, self.params['W%d'%(i+1)], self.params['b%d'%(i+1)])
             caches.append(cache)
@@ -319,9 +318,9 @@ class FullyConnectedNet(object):
         for i in range(self.num_layers-2, -1, -1):
             
             if self.normalization=='batchnorm':
-                dX, grads['W%d'%(i+1)], grads['b%d'%(i+1)], grads['gamma%d'%(i+1)], grads['beta%d'%(i+1)] = affine_bn_leaky_relu_backward(dX, caches.pop())
+                dX, grads['W%d'%(i+1)], grads['b%d'%(i+1)], grads['gamma%d'%(i+1)], grads['beta%d'%(i+1)] = affine_bn_leaky_relu_backward(dX, caches.pop(), self.use_dropout)
             elif self.normalization=='layernorm':
-                dX, grads['W%d'%(i+1)], grads['b%d'%(i+1)], grads['gamma%d'%(i+1)], grads['beta%d'%(i+1)] = affine_ln_leaky_relu_backward(dX, caches.pop())                
+                dX, grads['W%d'%(i+1)], grads['b%d'%(i+1)], grads['gamma%d'%(i+1)], grads['beta%d'%(i+1)] = affine_ln_leaky_relu_backward(dX, caches.pop(), self.use_dropout)                
             else:
                 dX, grads['W%d'%(i+1)], grads['b%d'%(i+1)] = affine_leaky_relu_backward(dX, caches.pop())
             grads['W%d'%(i+1)] += self.params['W%d'%(i+1)] * self.reg
@@ -336,34 +335,54 @@ class FullyConnectedNet(object):
 
     
 # functions for batch normalization layer
-def affine_bn_leaky_relu_forward(x, w, b, gamma, beta, bn_param):
+def affine_bn_leaky_relu_forward(x, w, b, gamma, beta, bn_param, dropout_param, use_dropout):
     bn_param['flag'] = None
     out, cache1 = affine_forward(x, w, b)
     out, cache2 = batchnorm_forward(out, gamma, beta, bn_param)
     out, cache3 = leaky_relu_forward(out)
-    cache = (cache1, cache2, cache3)
+    cache4 = None
+    # dropout
+    if use_dropout:
+       out, cache4 = dropout_forward(out, dropout_param)    
+    cache = (cache1, cache2, cache3, cache4)
+    
     return out, cache
 
-def affine_bn_leaky_relu_backward(dout, cache):
+def affine_bn_leaky_relu_backward(dout, cache, use_dropout):
 
-    cache1, cache2, cache3 = cache
+    cache1, cache2, cache3, cache4 = cache
+    
+    # dropout
+    if use_dropout:
+       dout = dropout_backward(dout, cache4)
+    
     da = leaky_relu_backward(dout, cache3)
     daa, dgamma, dbeta = batchnorm_backward_alt(da, cache2)
     daaa, dw, db = affine_backward(daa, cache1)
     return daaa, dw, db, dgamma, dbeta
 
 # functions for layer normalization
-def affine_ln_leaky_relu_forward(x, w, b, gamma, beta, bn_param):
+def affine_ln_leaky_relu_forward(x, w, b, gamma, beta, bn_param, dropout_param, use_dropout):
     bn_param['flag'] = 'layer'
     out, cache1 = affine_forward(x, w, b)
     out, cache2 = layernorm_forward(out, gamma, beta, bn_param)
     out, cache3 = leaky_relu_forward(out)
-    cache = (cache1, cache2, cache3)
+    cache4 = None
+    # dropout
+    if use_dropout:
+       out, cache4 = dropout_forward(out, dropout_param)    
+    cache = (cache1, cache2, cache3, cache4)
+    
     return out, cache
 
-def affine_ln_leaky_relu_backward(dout, cache):
+def affine_ln_leaky_relu_backward(dout, cache, use_dropout):
 
-    cache1, cache2, cache3 = cache
+    cache1, cache2, cache3, cache4 = cache
+    
+    # dropout
+    if use_dropout:
+       dout = dropout_backward(dout, cache4)
+    
     da = leaky_relu_backward(dout, cache3)
     daa, dgamma, dbeta = layernorm_backward(da, cache2)
     daaa, dw, db = affine_backward(daa, cache1)
