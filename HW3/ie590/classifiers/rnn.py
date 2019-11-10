@@ -246,7 +246,33 @@ class CaptioningRNN(object):
         # you are using an LSTM, initialize the first cell state to zeros.        #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        pass ## Write your code here
+        
+        h0 = np.dot(features,W_proj) + b_proj
+        c0 = np.zeros(h0.shape)
+        
+        start = (self._start * np.ones(N)).astype(np.int32)
+        
+        # [1] embed previous word - here start
+        x = W_embed[start, :]
+        
+        for i in range(max_length):
+            # [2] rnn/lstm
+            if self.cell_type == 'rnn':
+                next_h, _ = rnn_step_forward(x, h0, Wx, Wh, b)
+            else:
+                next_h, next_c, _ = lstm_step_forward(x, h0, c0, Wx, Wh, b)
+                c0 = next_c
+                
+            # [3] learned affine transform                    
+            out = np.dot(next_h, W_vocab) + b_vocab
+            
+            # [4] select word with max score
+            captions[:, i] = np.argmax(out, axis=1)
+            
+            # [1]
+            x = W_embed[captions[:, i], :]
+            h0 = next_h
+
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
