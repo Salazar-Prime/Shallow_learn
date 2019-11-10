@@ -132,14 +132,14 @@ def rnn_forward(x, h0, Wx, Wh, b, use_tanh = True):
     prev_h = h0 # inital h0
     if(use_tanh):
         for i in range(T):
-            prev_h, cache_h = rnn_step_forward(x[:,i,:], prev_h, Wx, Wh, b, use_tanh)
+            prev_h, cache_a = rnn_step_forward(x[:,i,:], prev_h, Wx, Wh, b, use_tanh)
             h[:,i,:] = prev_h
-            cache.append(cache_h)
+            cache.append(cache_a)
     else:
         for i in range(T):
-            prev_h, cache_h = rnn_step_forward(x[:,i,:], prev_h, Wx, Wh, b, use_tanh)
+            prev_h, cache_a = rnn_step_forward(x[:,i,:], prev_h, Wx, Wh, b, use_tanh)
             h[:,i,:] = prev_h
-            cache.append(cache_h)
+            cache.append(cache_a)
     cache.append(D)
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -313,7 +313,15 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     # You may want to use the numerically stable sigmoid implementation above.  #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    pass ## Write your code here
+    H = prev_c.shape[1]
+    a = np.dot(x, Wx) + np.dot(prev_h, Wh) + b
+    i = sigmoid(a[:, 0*H:1*H])
+    f = sigmoid(a[:, 1*H:2*H])
+    o = sigmoid(a[:, 2*H:3*H])
+    g = np.tanh(a[:, 3*H:4*H])
+    next_c = f * prev_c + i * g
+    next_h = o * np.tanh(next_c)
+    cache = (x, Wx, Wh, i, f, o, g, prev_c, prev_h, next_c)
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -347,7 +355,32 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     # the output value from the nonlinearity.                                   #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    pass ## Write your code here
+    
+    x, Wx, Wh, i, f, o, g, prev_c, prev_h, next_c = cache
+    
+    # for c and gates
+    do = dnext_h * np.tanh(next_c)
+    dc = (1 - np.tanh(next_c) ** 2) * dnext_h * o
+    dc += dnext_c
+    df = dc * prev_c
+    dprev_c = dc * f
+    di = g * dc
+    dg = i * dc
+    
+    # for a
+    dai = di * (1 - i) * i
+    daf = df * (1 - f) * f
+    dao = do * (1 - o) * o
+    dag = dg * (1 - g ** 2)
+    da = np.hstack((dai, daf, dao, dag))
+    
+    # for rest
+    dx      = np.dot(da,  Wx.T)
+    dprev_h = np.dot(da,  Wh.T)
+    dWx     = np.dot(x.T, da)
+    dWh     = np.dot(prev_h.T, da)    
+    db      = np.sum(da, axis=0)
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -378,13 +411,23 @@ def lstm_forward(x, h0, Wx, Wh, b):
     - h: Hidden states for all timesteps of all sequences, of shape (N, T, H)
     - cache: Values needed for the backward pass.
     """
-    h, cache = None, None
+    cache = []
     #############################################################################
     # TODO: Implement the forward pass for an LSTM over an entire timeseries.   #
     # You should use the lstm_step_forward function that you just defined.      #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    pass ## Write your code here
+    N, T, D = x.shape
+    H = h0.shape[1]
+    prev_h = h0 # inital h0
+    prev_c = np.zeros_like(prev_h) # inital c0
+    h = np.zeros((N, T, H))
+    for i in range(T):
+        next_h, next_c, cache_a = lstm_step_forward(x[:,i,:], prev_h, prev_c, Wx, Wh, b)
+        h[:,i,:] = next_h
+        prev_h, prev_c = next_h, next_c
+        cache.append(cache_a)
+    cache.append(D)
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -414,7 +457,27 @@ def lstm_backward(dh, cache):
     # You should use the lstm_step_backward function that you just defined.     #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    pass ## Write your code here
+    
+    N, T, H = dh.shape
+    D = cache.pop()
+    dx = np.zeros((N, T, D))
+    dWx = np.zeros((D, 4*H))
+    dWh = np.zeros((H, 4*H))
+    db = np.zeros(4*H)
+    
+    dnext_c = np.zeros((N,H))
+    dnext_h = np.zeros((N,H))
+
+    for i in range(T - 1, -1, -1):
+        dxi, dprev_h, dprev_c, dWxi, dWhi, dbi = lstm_step_backward(dh[:,i,:] + dnext_h, dnext_c, cache[i])
+        dx[:,i,:] = dxi
+        dWx += dWxi
+        dWh += dWhi
+        db += dbi
+        dnext_h = dprev_h
+        dnext_c = dprev_c 
+    dh0 = dnext_h
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
